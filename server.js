@@ -43,7 +43,7 @@ bot.on('contact', async (msg) => {
     try {
         // መረጃውን ወደ users ሰንጠረዥ ማስገባት
         const { error } = await supabase
-            .from('users')
+            .from('Users')
             .insert([{ telegram_id: telegramId, first_name: firstName, phone_number: phone }]);
 
         if (error) throw error;
