@@ -2,18 +2,17 @@ const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const app = express();
 
-// ያንተ ኦፊሴላዊ የቦት ቶከን እና የጨዋታ ሊንክ
 const TOKEN = '8994032862:AAHM-hoRiyR6QR9UrnJ4YZjLi7YT27D94y8';
 const bot = new TelegramBot(TOKEN, { polling: true });
 const WEB_APP_URL = 'https://vercel.app';
 
-// 1. ተጠቃሚው /start ሲጫን
+// 1. /start ሲጫን
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     bot.sendMessage(chatId, "🎰 ወደ ላዝ ቢንጎ እንኳን በደህና መጡ!\n\n👇 ጨዋታውን ለመጀመር መጀመሪያ በሜኑው ላይ ያለውን <b>/register</b> የሚለውን ትዕዛዝ ይጫኑ።", { parse_mode: 'HTML' });
 });
 
-// 2. ተጠቃሚው /register ሲጫን (የስልክ ቁጥር ማጋሪያ)
+// 2. /register ሲጫን
 bot.onText(/\/register/, (msg) => {
     const chatId = msg.chat.id;
     bot.sendMessage(chatId, "📱 እባክዎ አካውንትዎን ለማረጋገጥ ከታች ያለውን ሰማያዊ ቁልፍ ተጭነው ስልክ ቁጥርዎን ያጋሩ።", {
@@ -39,7 +38,7 @@ bot.on('contact', (msg) => {
     });
 });
 
-// 3. ተጠቃሚው /play ሲጫን (ጨዋታውን በWeb App መክፈቻ)
+// 3. /play ሲጫን
 bot.onText(/\/play/, (msg) => {
     const chatId = msg.chat.id;
     bot.sendMessage(chatId, "🎮 ጨዋታው ዝግጁ ነው! ለመጫወት ከታች ያለውን ቁልፍ ይጫኑ፦", {
@@ -47,6 +46,13 @@ bot.onText(/\/play/, (msg) => {
             inline_keyboard: [[{ text: "🚀 Play Bingo (ጨዋታውን ጀምር)", web_app: { url: WEB_APP_URL } }]]
         }
     });
+});
+
+// 4. /deposit ሲጫን (የሙከራ 500 ብር ማስገቢያ ማሳያ)
+bot.onText(/\/deposit/, (msg) => {
+    const chatId = msg.chat.id;
+    const firstName = msg.from.first_name;
+    bot.sendMessage(chatId, `💰 <b>የዴፖዚት ማረጋገጫ (Demo)</b>\n\nእንኳን ደስ አለዎት <b>${firstName}</b>! የ <b>500 ETB</b> ክፍያዎ በተሳካ ሁኔታ ተጠናቋል። አሁን ወደ ጨዋታው ሜዳ በመመለስ መጫወት ይችላሉ።`, { parse_mode: 'HTML' });
 });
 
 app.listen(process.env.PORT || 3000, () => console.log("Bot server is running..."));
