@@ -52,8 +52,9 @@ bot.on('contact', async (msg) => {
         });
 
     } catch (err) {
-        console.error("የዴታቤዝ ስህተት:", err.message);
-        bot.sendMessage(chatId, `❌ የዴታቤዝ ስህተት አጋጥሟል፦\n<code>${err.message || JSON.stringify(err)}</code>`, { parse_mode: 'HTML' });
+        console.error("የዴታቤዝ ስህተት:", err.message || err);
+        // የቴሌግራም ኤችቲኤምኤል ስህተትን ለማስቀረት ንጹሕ ጽሑፍ ብቻ መላኪያ
+        bot.sendMessage(chatId, `❌ የዴታቤዝ ስህተት አጋጥሟል፦\n${err.message || "የማይታወቅ ስህተት"}`);
     }
 });
 
