@@ -9,7 +9,6 @@ const bot = new TelegramBot(TOKEN, { polling: true });
 const WEB_APP_URL = 'https://vercel.app';
 
 // 2. የSupabase ግንኙነት ማዋቀሪያ
-// እባክህ እነዚህን ሁለቱን በትክክለኛ የSupabase መረጃዎችህ ተካቸው
 const SUPABASE_URL = 'https://supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_YZHcP8wEIx1KCv1-afd3jA_yKadAGEh';
 
@@ -41,7 +40,6 @@ bot.on('contact', async (msg) => {
     const telegramId = msg.from.id;
 
     try {
-        // መረጃውን ወደ users ሰንጠረዥ ማስገባት
         const { error } = await supabase
             .from('Users')
             .insert([{ telegram_id: telegramId, first_name: firstName, phone_number: phone }]);
@@ -53,8 +51,27 @@ bot.on('contact', async (msg) => {
             reply_markup: { remove_keyboard: true }
         });
 
-        } catch (err) {
+    } catch (err) {
         console.error("የዴታቤዝ ስህተት:", err.message);
-        // እውነተኛውን ስህተት በቴሌግራም መልእክት ላይ በቀጥታ ማሳያ
         bot.sendMessage(chatId, `❌ የዴታቤዝ ስህተት አጋጥሟል፦\n<code>${err.message || JSON.stringify(err)}</code>`, { parse_mode: 'HTML' });
     }
+});
+
+// 6. /play ትዕዛዝ
+bot.onText(/\/play/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, "🎮 ጨዋታው ዝግጁ ነው! ለመጫወት ከታች ያለውን ቁልፍ ይጫኑ፦", {
+        reply_markup: {
+            inline_keyboard: [[{ text: "🚀 Play Bingo (ጨዋታውን ጀምር)", web_app: { url: WEB_APP_URL } }]]
+        }
+    });
+});
+
+// 7. /deposit ትዕዛዝ
+bot.onText(/\/deposit/, (msg) => {
+    const chatId = msg.chat.id;
+    const firstName = msg.from.first_name;
+    bot.sendMessage(chatId, `💰 <b>የዴፖዚት ማረጋገጫ (Demo)</b>\n\nእንኳን ደስ አለዎት <b>${firstName}</b>! የ <b>500 ETB</b> ክፍያዎ በተሳካ ሁኔታ ተጠናቋል። አሁን ወደ ጨዋታው ሜዳ በመመለስ መጫወት ይችላሉ።`, { parse_mode: 'HTML' });
+});
+
+app.listen(process.env.PORT || 3000, () => console.log("Bot server is running with Supabase..."));
