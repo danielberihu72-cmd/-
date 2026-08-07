@@ -4,7 +4,7 @@ const express = require('express');
 const app = express();
 
 // 1. የቴሌግራም ቦት ቶከን
-const TOKEN = '8994032862:AAHM-hoRiyR6QR9UrnJ4YZjLi7YT27D94y8';
+const TOKEN = '8989868624:AAGTuazoUV7NvEFcMhpIxIqz-TJBb41WJcg';
 const bot = new TelegramBot(TOKEN, { polling: true });
 const WEB_APP_URL = 'https://vercel.app';
 
