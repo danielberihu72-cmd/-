@@ -1,18 +1,27 @@
 const TelegramBot = require('node-telegram-bot-api');
+const { createClient } = require('@supabase/supabase-js');
 const express = require('express');
 const app = express();
 
-const TOKEN = '8989868624:AAGTuazoUV7NvEFcMhpIxIqz-TJBb41WJcg';
+// 1. የቴሌግራም ቦት ቶከን
+const TOKEN = '8994032862:AAHM-hoRiyR6QR9UrnJ4YZjLi7YT27D94y8';
 const bot = new TelegramBot(TOKEN, { polling: true });
 const WEB_APP_URL = 'https://vercel.app';
 
-// 1. /start ሲጫን
+// 2. የSupabase ግንኙነት ማዋቀሪያ
+// እባክህ እነዚህን ሁለቱን በትክክለኛ የSupabase መረጃዎችህ ተካቸው
+const SUPABASE_URL = 'https://supabase.co'; 
+const SUPABASE_ANON_KEY = 'የእርስዎን_SUPABASE_ANON_KEY_እዚህ_ይለጥፉ';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 3. /start ትዕዛዝ
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     bot.sendMessage(chatId, "🎰 ወደ ላዝ ቢንጎ እንኳን በደህና መጡ!\n\n👇 ጨዋታውን ለመጀመር መጀመሪያ በሜኑው ላይ ያለውን <b>/register</b> የሚለውን ትዕዛዝ ይጫኑ።", { parse_mode: 'HTML' });
 });
 
-// 2. /register ሲጫን
+// 4. /register ትዕዛዝ
 bot.onText(/\/register/, (msg) => {
     const chatId = msg.chat.id;
     bot.sendMessage(chatId, "📱 እባክዎ አካውንትዎን ለማረጋገጥ ከታች ያለውን ሰማያዊ ቁልፍ ተጭነው ስልክ ቁጥርዎን ያጋሩ።", {
@@ -24,21 +33,33 @@ bot.onText(/\/register/, (msg) => {
     });
 });
 
-// ስልክ ቁጥር ሲላክ መዝግቦ የ/play መመሪያ መስጫ
-bot.on('contact', (msg) => {
+// 5. ስልክ ሲላክ አውቶማቲክ ዴታቤዝ (Supabase) ላይ መመዝገቢያ
+bot.on('contact', async (msg) => {
     const chatId = msg.chat.id;
     const firstName = msg.contact.first_name;
     const phone = msg.contact.phone_number;
+    const telegramId = msg.from.id;
 
-    console.log(`ተመዝጋቢ - ስም: ${firstName}, ስልክ: ${phone}`);
+    try {
+        // መረጃውን ወደ users ሰንጠረዥ ማስገባት
+        const { error } = await supabase
+            .from('users')
+            .insert([{ telegram_id: telegramId, first_name: firstName, phone_number: phone }]);
 
-    bot.sendMessage(chatId, `🎉 ማረጋገጫው ተጠናቋል ${firstName}! በተሳካ ሁኔታ ተመዝግበዋል።\n\n👇 አሁን ጨዋታውን ለመክፈት በሜኑው ላይ ያለውን <b>/play</b> የሚለውን ትዕዛዝ ይጫኑ።`, {
-        parse_mode: 'HTML',
-        reply_markup: { remove_keyboard: true }
-    });
+        if (error) throw error;
+
+        bot.sendMessage(chatId, `🎉 ማረጋገጫው ተጠናቋል ${firstName}! መረጃዎ በዴታቤዝ ላይ በተሳካ ሁኔታ ተመዝግቧል።\n\n👇 አሁን ጨዋታውን ለመክፈት በሜኑው ላይ ያለውን <b>/play</b> የሚለውን ትዕዛዝ ይጫኑ።`, {
+            parse_mode: 'HTML',
+            reply_markup: { remove_keyboard: true }
+        });
+
+    } catch (err) {
+        console.error("የዴታቤዝ ስህተት:", err.message);
+        bot.sendMessage(chatId, "❌ ይቅርታ፣ ምዝገባው ላይ ቴክኒካዊ ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።");
+    }
 });
 
-// 3. /play ሲጫን
+// 6. /play ትዕዛዝ
 bot.onText(/\/play/, (msg) => {
     const chatId = msg.chat.id;
     bot.sendMessage(chatId, "🎮 ጨዋታው ዝግጁ ነው! ለመጫወት ከታች ያለውን ቁልፍ ይጫኑ፦", {
@@ -48,11 +69,11 @@ bot.onText(/\/play/, (msg) => {
     });
 });
 
-// 4. /deposit ሲጫን (የሙከራ 500 ብር ማስገቢያ ማሳያ)
+// 7. /deposit ትዕዛዝ
 bot.onText(/\/deposit/, (msg) => {
     const chatId = msg.chat.id;
     const firstName = msg.from.first_name;
     bot.sendMessage(chatId, `💰 <b>የዴፖዚት ማረጋገጫ (Demo)</b>\n\nእንኳን ደስ አለዎት <b>${firstName}</b>! የ <b>500 ETB</b> ክፍያዎ በተሳካ ሁኔታ ተጠናቋል። አሁን ወደ ጨዋታው ሜዳ በመመለስ መጫወት ይችላሉ።`, { parse_mode: 'HTML' });
 });
 
-app.listen(process.env.PORT || 3000, () => console.log("Bot server is running..."));
+app.listen(process.env.PORT || 3000, () => console.log("Bot server is running with Supabase..."));
