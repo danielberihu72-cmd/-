@@ -11,7 +11,7 @@ const WEB_APP_URL = 'https://vercel.app';
 // 2. የSupabase ግንኙነት ማዋቀሪያ
 // እባክህ እነዚህን ሁለቱን በትክክለኛ የSupabase መረጃዎችህ ተካቸው
 const SUPABASE_URL = 'https://supabase.co'; 
-const SUPABASE_ANON_KEY = 'sb_publishable_YZHcP8wEIx1KCv1-afd3jA_yKadAGEh';
+const SUPABASE_ANON_KEY = 'sb_publishable_YZHcP8wEIx1KCv1-afd3jA_yKadAGEh' ;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
