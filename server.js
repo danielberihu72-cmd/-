@@ -1,67 +1,175 @@
-const TelegramBot = require('node-telegram-bot-api');
-const { createClient } = require('@supabase/supabase-js');
-const express = require('express');
-const app = express();
+const TelegramBot = require("node-telegram-bot-api");
 
-// 1. የቴሌግራም ቦት ቅንብር
-const TOKEN = '8989868624:AAGTuazoUV7NvEFcMhpIxIqz-TJBb41WJcg';
-const bot = new TelegramBot(TOKEN, { polling: true });
-const WEB_APP_URL = 'https://vercel.app';
+// ===============================
+// BOT TOKEN
+// ===============================
 
-// 2. የSupabase ግንኙነት ማዋቀር
-const SUPABASE_URL = 'እዚህ ጋ የባለፈውን የSupabase URL ያስገቡ';
-const SUPABASE_ANON_KEY = 'sb_publishable_YZHcP8wEIx1KCv1-afd3jA_yKadAGEh';
+const TOKEN = process.env.BOT_TOKEN;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+if (!TOKEN) {
+  console.error("❌ BOT_TOKEN is missing!");
+  process.exit(1);
+}
 
-// 3. /start ትዕዛዝ
-bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "🎰 ወደ ላኪ ቢንጎ እንኳን በደህና መጡ! 👋\n\n👇 ጨዋታውን ለመጀመር መጀመሪያ በቦቱ ላይ ይገንቡ ወይም /register የሚለውን ትዕዛዝ ይጫኑ።");
+const bot = new TelegramBot(TOKEN, {
+  polling: true
 });
 
-// 4. /register ትዕዛዝ
-bot.onText(/\/register/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "📱 እባክዎ አካውንትዎን ለማረጋገጥ ከታች ያለውን ሰማያዊ ቁልፍ ተጭነው ስልክ ቁጥርዎን ያጋሩ።", {
-    reply_markup: {
-      keyboard: [[{ text: "📱 ስልክ ቁጥር ያጋሩ (Share Contact)", request_contact: true }]],
-      resize_keyboard: true,
-      one_time_keyboard: true
-    }
-  });
-});
 
-// 5. ስልክ ቁጥር ሲላክ (Contact Sharing) - የተስተካከለው ክፍል
-bot.on('contact', async (msg) => {
+// ===============================
+// START
+// ===============================
+
+bot.onText(/^\/start$/, async (msg) => {
   const chatId = msg.chat.id;
-  const firstName = msg.contact.first_name || msg.from.first_name;
-  const phone = msg.contact.phone_number;
-  const telegramId = msg.from.id;
 
   try {
-    // እዚህ ጋ 'users' በሚለው ትክክለኛ የሰንጠረዥ ስም ተተክቷል
-    const { error } = await supabase
-      .from('users') 
-      .insert([{ telegram_id: telegramId, first_name: firstName, phone: phone }]);
+    await bot.sendMessage(
+      chatId,
+      `🎉 ወደ ዳን ላዝ ቢንጎ በደህና መጡ!
 
-    if (error) throw error;
-
-    bot.sendMessage(chatId, `✅ ማረጋገጫው ተጠናቋል ${firstName}! መረጃዎ በSupabase ተመዝግቧል።`, {
-      parse_mode: 'HTML',
-      reply_markup: { remove_keyboard: true }
-    });
-
-  } catch (err) {
-    console.error("የዳታቤዝ ስህተት:", err.message || err);
-    bot.sendMessage(chatId, `❌ ስህተት አጋጥሟል፦\n${err.message || err}`, {
-      parse_mode: 'HTML'
-    });
+📝 ለመመዝገብ ከታች ያለውን Register ይጫኑ።`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "📝 Register",
+                callback_data: "register"
+              }
+            ]
+          ]
+        }
+      }
+    );
+  } catch (error) {
+    console.error("❌ Start error:", error);
   }
 });
 
-// 6. ለኤክስፕረስ ሰርቨር (አማራጭ ፖርት)
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`ሰርቨሩ በፖርት ${PORT} ላይ እየሰራ ነው`);
+
+// ===============================
+// REGISTER BUTTON
+// ===============================
+
+bot.on("callback_query", async (query) => {
+  if (query.data !== "register") {
+    return;
+  }
+
+  const chatId = query.message.chat.id;
+
+  try {
+    await bot.answerCallbackQuery(query.id);
+
+    await bot.sendMessage(
+      chatId,
+      `📱 ለመመዝገብ እባክዎ የራስዎን Contact ያጋሩ።
+
+👇 Share Contact የሚለውን ይጫኑ።`,
+      {
+        reply_markup: {
+          keyboard: [
+            [
+              {
+                text: "📱 Share Contact",
+                request_contact: true
+              }
+            ]
+          ],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      }
+    );
+  } catch (error) {
+    console.error("❌ Register error:", error);
+  }
 });
+
+
+// ===============================
+// CONTACT SHARED
+// ===============================
+
+bot.on("contact", async (msg) => {
+  const chatId = msg.chat.id;
+  const telegramId = msg.from.id;
+
+  const firstName =
+    msg.contact.first_name ||
+    msg.from.first_name ||
+    "Player";
+
+  const phone = msg.contact.phone_number;
+
+  try {
+
+    // Make sure the user shared their own contact
+    if (
+      msg.contact.user_id &&
+      msg.contact.user_id !== telegramId
+    ) {
+      await bot.sendMessage(
+        chatId,
+        "❌ እባክዎ የራስዎን Contact ብቻ ያጋሩ።"
+      );
+
+      return;
+    }
+
+
+    // ===============================
+    // AUTOMATIC REGISTRATION
+    // ===============================
+
+    console.log("=================================");
+    console.log("✅ NEW REGISTRATION");
+    console.log("Telegram ID:", telegramId);
+    console.log("Name:", firstName);
+    console.log("Phone:", phone);
+    console.log("=================================");
+
+
+    // Remove Share Contact keyboard
+    await bot.sendMessage(
+      chatId,
+      `✅ በትክክል ተመዝግበዋል!
+
+👤 ስም: ${firstName}
+📱 ስልክ: ${phone}`,
+      {
+        reply_markup: {
+          remove_keyboard: true
+        }
+      }
+    );
+
+  } catch (error) {
+    console.error("❌ Contact error:", error);
+
+    await bot.sendMessage(
+      chatId,
+      "❌ ምዝገባው አልተሳካም። እባክዎ እንደገና ይሞክሩ።"
+    );
+  }
+});
+
+
+// ===============================
+// POLLING ERROR
+// ===============================
+
+bot.on("polling_error", (error) => {
+  console.error("❌ Polling error:", error.message);
+});
+
+
+// ===============================
+// BOT STARTED
+// ===============================
+
+console.log("=================================");
+console.log("🤖 DAN LAZ BINGO BOT");
+console.log("✅ Bot is running...");
+console.log("=================================");
